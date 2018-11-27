@@ -1,10 +1,11 @@
 #Makefile
 
 CC= g++ -std=c++11 -stdlib=libc++
-OBJECTS = objects
-SOURCES = sources
+OBJECTS = examples/objects
+SOURCES = lib/sources
+MAIN = examples/
 BIN = bin
-INCLUDES = -I headers/
+INCLUDES = -I lib/headers/
 CFLAGS= -g
 
 all: $(BIN)/thermalGradient
@@ -12,7 +13,7 @@ all: $(BIN)/thermalGradient
 $(BIN)/thermalGradient: $(OBJECTS)/thermalGradient.o $(OBJECTS)/vortex_lattice.o $(OBJECTS)/vortex.o $(OBJECTS)/boundary_condition.o $(OBJECTS)/ran1.o
 	${CC} ${CFLAGS} $^ -o $@
 
-$(OBJECTS)/thermalGradient.o: $(SOURCES)/thermalGradient.cpp
+$(OBJECTS)/thermalGradient.o: $(MAIN)/thermalGradient.cpp
 	${CC} -c ${CFLAGS} ${INCLUDES} $^ -o $@
 
 $(OBJECTS)/vortex_lattice.o: $(SOURCES)/vortex_lattice.cpp
