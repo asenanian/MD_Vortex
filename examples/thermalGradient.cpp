@@ -1,55 +1,61 @@
 #include "utilities.h"
 #include "vortex_lattice.h"
 #include "boundary_condition.h"
+#include "vec2d.h"
 #include "vortex.h"
 
 int main()
 {
-    VortexLattice lattice = VortexLattice();
+    typedef bc::ReflectiveBoundaryCondition Wall;
 
-    auto right_wall = bc::ReflectiveBoundaryCondition(
-      RIGHT_WALL, bc::Direction::LESS, bc::Orientation::VERTICAL );
-    lattice << std::make_shared<bc::ReflectiveBoundaryCondition>(right_wall);
+    VortexLattice lattice;
 
-    auto top_wall = bc::ReflectiveBoundaryCondition(
-      TOP_WALL, bc::Direction::LESS, bc::Orientation::HORIZONTAL );
-    lattice << std::make_shared<bc::ReflectiveBoundaryCondition>(top_wall);
+    // defining boundary conditions
+    auto right_wall = std::make_shared<Wall>(
+      Wall(RIGHT_WALL,bc::Orientation::VERTICAL,bc::Comparator::GREATER_THAN));
+    auto top_wall = std::make_shared<Wall>(
+      Wall(TOP_WALL,bc::Orientation::HORIZONTAL,bc::Comparator::GREATER_THAN));
+    auto bottom_wall = std::make_shared<Wall>(
+      Wall(BOTTOM_WALL,bc::Orientation::HORIZONTAL,bc::Comparator::LESS_THAN));
 
-    auto bottom_wall = bc::ReflectiveBoundaryCondition(
-      BOTTOM_WALL, bc::Direction::GREATER, bc::Orientation::HORIZONTAL );
-    lattice << std::make_shared<bc::ReflectiveBoundaryCondition>(bottom_wall);
+    // implementing bc's to system
+    lattice << right_wall;
+    lattice << top_wall;
+    lattice << bottom_wall;
 
-    lattice.nucleateVortex(128,0);
-    lattice.nucleateVortex(127,7);
+    // add vortices
+    Vortex * init_vort1 = new Vortex(17,15);
+    Vortex * init_vort2 = new Vortex(26,67);
+    lattice << init_vort1 << init_vort2;
 
     const int LATTICE_SIZE = TOP_WALL - BOTTOM_WALL;
-    double gradT = 0.1;
-    long seed = -424523;
+    double gradT = 0.01;
+    long seed = -42453;
     int steps = 0;
     int n_nucleations = 0;
     double energy = lattice.energy();
+
     for (;;)
     {
         steps++;
         lattice.step(gradT);
 
-        if ( steps % 100 == 0 )
+        if ( steps % 1000 == 0 )
         {
             double new_energy = lattice.energy();
-            if ( abs((new_energy - energy)/energy) < .1 )
+            double delta_E = energy - new_energy;
+            //std::cout << delta_E << std::endl;
+            if ( delta_E/energy < .5 )
             {
-                int nucleation_pos = static_cast<int>(LATTICE_SIZE*ran1(&seed)) + BOTTOM_WALL;
-                lattice << new Vortex(128,nucleation_pos);
-                //lattice.nucleateVortex(128,nucleation_pos);
-                std::cout << "Vortex nucleated.\n";
-                lattice.dump();
+                int nucleation_pos_x = ran1(RIGHT_WALL - NUCLEATION_STRIP_WIDTH,RIGHT_WALL,&seed);
+                int nucleation_pos_y = ran1(BOTTOM_WALL,LATTICE_SIZE,&seed);
+                lattice << new Vortex(nucleation_pos_x,nucleation_pos_y);
                 n_nucleations++;
             }
             energy = new_energy;
         }
-        if ( n_nucleations > 20 ) break;
+        if ( n_nucleations > 400 ) break;
     }
-    std::cout << "Number of steps: " << steps << std::endl;
     lattice.dump();
     return 0;
 }
