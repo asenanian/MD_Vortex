@@ -2,44 +2,80 @@
 #include "vortex.h"
 #include "vec2d.h"
 
-namespace bc
+using namespace bc;
+//------------------------------------------------------------------------------
+namespace
 {
-    namespace
+    inline bool containsLessHorizontal(Vortex * vortex, const double & location)
     {
-        inline bool containsLessHorizontal(Vortex * vortex, const double & location)
-        { return vortex->get_pos().y < location; }
-
-        inline bool containsLessVertical(Vortex * vortex, const double & location)
-        { return vortex->get_pos().x < location; }
-
-        inline bool containsGreaterHorizontal(Vortex * vortex, const double & location)
-        { return vortex->get_pos().y > location; }
-
-        inline bool containsGreaterVertical(Vortex * vortex, const double & location)
-        { return vortex->get_pos().x > location; }
-
-        typedef std::pair<Direction,Orientation> BoundaryConditionOption;
-        typedef std::function<bool(Vortex*,const double&)> comparator;
+        return vortex->get_pos().y + vortex->get_force().y*VISCOSITY < location;
     }
 
-    BoundaryCondition::BoundaryCondition(const double & p_pos, Direction p_direction, Orientation p_orientation)
+    inline bool containsLessVertical(Vortex * vortex, const double & location)
     {
-        auto option_dictionary = std::map<BoundaryConditionOption,comparator>{};
-        option_dictionary.emplace(BoundaryConditionOption(LESS,HORIZONTAL),containsLessHorizontal);
-        option_dictionary.emplace(BoundaryConditionOption(LESS,VERTICAL),containsLessVertical);
-        option_dictionary.emplace(BoundaryConditionOption(GREATER,HORIZONTAL),containsGreaterHorizontal);
-        option_dictionary.emplace(BoundaryConditionOption(GREATER,VERTICAL),containsGreaterVertical);
-
-        auto temp_func = option_dictionary[BoundaryConditionOption(p_direction,p_orientation)];
-        contains = std::bind(temp_func,std::placeholders::_1,p_pos);
+        return vortex->get_pos().x + vortex->get_force().x*VISCOSITY < location;
     }
 
-    ReflectiveBoundaryCondition::ReflectiveBoundaryCondition (const double & p_pos, Direction p_direction, Orientation p_orientation)
-      : BoundaryCondition(p_pos,p_direction,p_orientation) {}
+    inline bool containsGreaterHorizontal(Vortex * vortex, const double & location)
+    {
+        return vortex->get_pos().y + vortex->get_force().y*VISCOSITY > location;
+    }
 
-    void ReflectiveBoundaryCondition::apply (Vortex * vortex) const
-    { return;}
+    inline bool containsGreaterVertical(Vortex * vortex, const double & location)
+    {
+        return vortex->get_pos().x + vortex->get_force().x*VISCOSITY > location;
+    }
 
-    void AbsorbingBoundaryCondition::apply (Vortex * vortex) const
-    { return;}
-};
+    typedef std::pair<Orientation,Comparator> BoundaryConditionOption;
+    typedef std::function<bool(Vortex*,const double&)> ComparatorFunction;
+}
+//------------------------------------------------------------------------------
+BoundaryCondition::BoundaryCondition(const double & p_pos, Orientation p_orientation,
+                                     Comparator p_comparator)
+                                     : m_orientation(p_orientation)
+{
+    //
+    auto option_dictionary = std::map<BoundaryConditionOption,ComparatorFunction>{};
+    option_dictionary.emplace(BoundaryConditionOption(HORIZONTAL,LESS_THAN),containsLessHorizontal);
+    option_dictionary.emplace(BoundaryConditionOption(VERTICAL,LESS_THAN),containsLessVertical);
+    option_dictionary.emplace(BoundaryConditionOption(HORIZONTAL,GREATER_THAN),containsGreaterHorizontal);
+    option_dictionary.emplace(BoundaryConditionOption(VERTICAL,GREATER_THAN),containsGreaterVertical);
+
+    auto temp_func = option_dictionary[BoundaryConditionOption(p_orientation,p_comparator)];
+    contains = std::bind(temp_func,std::placeholders::_1,p_pos);
+}
+//------------------------------------------------------------------------------
+ReflectiveBoundaryCondition::ReflectiveBoundaryCondition (const double & p_pos,
+                                                          Orientation p_orientation,
+                                                          Comparator p_comparator)
+  : BoundaryCondition(p_pos,p_orientation,p_comparator)
+{
+    // Do nothing
+}
+//------------------------------------------------------------------------------
+void ReflectiveBoundaryCondition::apply (Vortex * vortex) const
+{
+    switch(m_orientation)
+    {
+        case Orientation::HORIZONTAL:
+        {
+            force_vector force = -vortex->get_force();
+            force.x = 0;
+            vortex->addForce(force);
+            break;
+        }
+        case Orientation::VERTICAL:
+        {
+            force_vector force = -vortex->get_force();
+            force.y = 0;
+            vortex->addForce(force);
+            break;
+        }
+    }
+    return;
+}
+//------------------------------------------------------------------------------
+void AbsorbingBoundaryCondition::apply (Vortex * vortex) const
+{
+    // TODO
+}

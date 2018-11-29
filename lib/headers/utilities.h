@@ -5,20 +5,25 @@
 #include <cmath>
 #include <map>
 
-#define VISCOSITY 1. // bardeen stephen viscosity at T = 0
+#define VISCOSITY .1 // bardeen stephen viscosity at T = 0
 #define INTERACTION_STRENGTH 10.
 #define RIGHT_WALL 128
 #define LEFT_WALL 0
 #define TOP_WALL 128
 #define BOTTOM_WALL 0
+#define NUCLEATION_STRIP_WIDTH 10
 
 float ran1(long *idum);
+inline int ran1(const int &min, const int &max,long *idum)
+{return (max - min)*ran1(idum) + min;}
 
 namespace utils
 {
     template <typename Range,typename Function>
     Function for_each (Range & range, Function func)
-    { return std::for_each (range.begin(),range.end(),func); }
+    {
+        return std::for_each (range.begin(),range.end(),func);
+    }
 
     template <typename Range, typename Function>
     Function for_each_pair (Range range, Function func)
@@ -33,10 +38,13 @@ namespace utils
     Function for_each_if (Iterator begin, Iterator end, Predicate pred, Function func)
     {
         for (; begin != end; ++begin)
-            if (pred(*begin)) func(*begin);
+            if (pred(*begin))
+                func(*begin);
         return func;
     }
 
     constexpr double mod (double x, double mod)
-    { return !mod ? x : std::fmod(std::fmod(x,mod) + mod,mod); }
+    {
+        return !mod ? x : std::fmod(std::fmod(x,mod) + mod,mod);
+    }
 }

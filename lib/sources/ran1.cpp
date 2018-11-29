@@ -37,6 +37,8 @@ float ran1(long *idum)
 	if ((temp=AM*iy) > RNMX) return RNMX;
 	else return temp;
 }
+
+
 #undef IA
 #undef IM
 #undef AM
