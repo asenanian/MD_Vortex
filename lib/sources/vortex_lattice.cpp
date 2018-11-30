@@ -8,17 +8,23 @@ VortexLattice::VortexLattice ()
 {
     m_vortices = Lattice();
     m_boundary_conditions = BoundaryConditions();
+    m_forces = Forces();
 }
 //-------------------------------------------------
 VortexLattice::~VortexLattice ()
 {
-    for (Vortex * vortex : m_vortices)
-        delete vortex;
+    for (auto vortex : m_vortices) delete vortex;
 }
 //-------------------------------------------------
 VortexLattice& VortexLattice::operator <<(Vortex * vortex)
 {
     m_vortices.push_back(vortex);
+    return *this;
+}
+//-------------------------------------------------
+VortexLattice& VortexLattice:: operator <<(std::unique_ptr<const force_vector> force)
+{
+    m_forces.push_back(std::move(force));
     return *this;
 }
 //-------------------------------------------------
@@ -28,7 +34,7 @@ VortexLattice& VortexLattice::operator <<(std::shared_ptr<const bc::BoundaryCond
     return *this;
 }
 //-------------------------------------------------
-void VortexLattice::step (const double & gradT)
+void VortexLattice::step ()
 {
     for (auto vortex1 = m_vortices.begin(); vortex1 != m_vortices.end(); ++vortex1)
     {
@@ -41,19 +47,16 @@ void VortexLattice::step (const double & gradT)
             (*vortex1)->addForce(int_force);
             (*vortex2)->addForce(-int_force);
         }
-        // thermal gradient force
-        (*vortex1)->addForce(gradT,0);
+        // external forces
+        for (const auto & force : m_forces)
+          (*vortex1)->addForce(*force);
     }
 
     // apply boundary conditions
     utils::for_each(m_vortices,[this](Vortex * vortex){
-        for (auto boundary_condition : m_boundary_conditions)
-        {
+        for (const auto & boundary_condition : m_boundary_conditions)
             if (boundary_condition->contains(vortex))
-            {
                 boundary_condition->apply(vortex);
-            }
-        }
         vortex->updatePositions();
         vortex->clearForces();
     });
@@ -62,7 +65,8 @@ void VortexLattice::step (const double & gradT)
 double VortexLattice::energy () const
 {
     double energy = 0;
-    utils::for_each_pair(m_vortices,[this,&energy](Vortex * v1,Vortex * v2) {
+    utils::for_each_pair(m_vortices,[this,&energy]
+      (Vortex * v1, Vortex * v2) {
         if (v1 == v2)
             return;
 

@@ -53,7 +53,7 @@ ReflectiveBoundaryCondition::ReflectiveBoundaryCondition (const double & p_pos,
     // Do nothing
 }
 //------------------------------------------------------------------------------
-void ReflectiveBoundaryCondition::apply (Vortex * vortex) const
+void ReflectiveBoundaryCondition::apply (Vortex* vortex) const
 {
     switch(m_orientation)
     {
@@ -75,7 +75,7 @@ void ReflectiveBoundaryCondition::apply (Vortex * vortex) const
     return;
 }
 //------------------------------------------------------------------------------
-void AbsorbingBoundaryCondition::apply (Vortex * vortex) const
+void AbsorbingBoundaryCondition::apply (Vortex* vortex) const
 {
     // TODO
 }

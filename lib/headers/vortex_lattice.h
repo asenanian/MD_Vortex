@@ -12,11 +12,13 @@ public:
         // disable copy constructor
     ~VortexLattice ();
         // d'tor
-    VortexLattice& operator <<(Vortex * vortex);
+    VortexLattice& operator <<(Vortex*);
         // add constructed vortex
     VortexLattice& operator <<(std::shared_ptr<const bc::BoundaryCondition>);
         // add constructed vortex
-    void step (const double&);
+    VortexLattice& operator <<(std::unique_ptr<const force_vector>);
+        // add constructed vortex
+    void step ();
         // dynamic step due to interactions and gradient
     void dump () const;
         // output positions of vortices
@@ -36,6 +38,8 @@ private:
         // container of vortices
     BoundaryConditions m_boundary_conditions;
         // container of user-specified boundary conditions
+    Forces m_forces;
+        // container of external forces
 };
 
 

@@ -10,7 +10,7 @@ namespace bc
 
 typedef Vec2d<double> position_vector;
 typedef Vec2d<double> force_vector;
-typedef std::vector<force_vector*> Forces;
+typedef std::vector<std::unique_ptr<const force_vector>> Forces;
 typedef std::vector<std::shared_ptr<const bc::BoundaryCondition>> BoundaryConditions;
 typedef std::vector<Vortex*> Lattice;
 

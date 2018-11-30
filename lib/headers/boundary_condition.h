@@ -20,7 +20,7 @@ namespace bc
           // user defined function for deducing if vortex is on boundary
         virtual ~BoundaryCondition () {}
           // default d'tor
-        virtual void apply (Vortex * vortex) const = 0;
+        virtual void apply (Vortex*) const = 0;
           // apply action of boundary conditon. See derived classes below.
         std::function<bool(Vortex*)> contains;
           // function to deduce if vortex is on boundary.
@@ -30,13 +30,13 @@ namespace bc
     struct ReflectiveBoundaryCondition : public BoundaryCondition
     {
         ReflectiveBoundaryCondition(const double&,Orientation,Comparator);
-        void apply (Vortex * vortex) const;
+        void apply (Vortex*) const;
     };
     //----------------------------------------------------
     struct AbsorbingBoundaryCondition : public BoundaryCondition
     {
         AbsorbingBoundaryCondition(const double&,Orientation,Comparator);
-        void apply (Vortex * vortex) const;
+        void apply (Vortex*) const;
     };
 };
 
