@@ -1,52 +1,77 @@
 #include "utilities.h"
 #include "vortex.h"
 #include "vec2d.h"
+#include "temperature_map.h"
+
+using namespace md_vortex;
+
 //-----------------------------------------------------------
-Vortex::Vortex (const int &p_x, const int &p_y)
+Vortex::Vortex (const int &p_x, const int &p_y) noexcept
 {
-    m_pos = new position_vector(p_x,p_y);
-    m_force = new force_vector();
+    pos = new PositionVector(p_x,p_y);
+    force = new ForceVector(0,0);
+    if (!temperature)
+        temperature = Temperature({0.,0.});
+    inv_penetration_depth = sqrt(1. - temperature->at(*pos))/T0_PENETRATION_DEPTH;
+    inv_coherence_length = sqrt(1. - temperature->at(*pos))/T0_COHERENCE_LENGTH;
 }
 //-----------------------------------------------------------
-Vortex::Vortex (const position_vector &p_pos)
+Vortex::Vortex (const PositionVector &p_pos) noexcept
 {
-    m_pos = new position_vector(p_pos);
-    m_force = new force_vector();
+    pos = new PositionVector(p_pos);
+    force = new ForceVector(0,0);
+    if (!temperature)
+        temperature = Temperature({0.,0.});
 }
 //-----------------------------------------------------------
 Vortex::~Vortex ()
 {
-    delete m_pos;
-    delete m_force;
+    delete pos;
+    delete force;
 }
 //-----------------------------------------------------------
-void Vortex::addForce (const force_vector & force)
+void Vortex::AddForce (const ForceVector & ext_force)
 {
-    *m_force += force;
+    *force += ext_force;
 }
 //-----------------------------------------------------------
-void Vortex::addForce (const double & f_x, const double &f_y)
+void Vortex::AddForce (const double & f_x, const double &f_y)
 {
-    m_force->x += f_x;
-    m_force->y += f_y;
+    force->x += f_x;
+    force->y += f_y;
 }
 //-----------------------------------------------------------
-void Vortex::updatePositions ()
+void Vortex::UpdatePositions (const double &time_step)
 {
-    m_pos->x += m_force->x*VISCOSITY;
-    m_pos->y += m_force->y*VISCOSITY;
-}
-void Vortex::clearForces ()
-{
-    *m_force = force_vector(0,0);
+    pos->x += force->x*time_step;
+    pos->y += force->y*time_step;
+    *force = ForceVector(0,0);
 }
 //-----------------------------------------------------------
-const position_vector & Vortex::get_pos () const
+void Vortex::Move (const PositionVector & dr)
 {
-    return *m_pos;
+    *pos += dr;
+    *force = ForceVector(0,0);
+    inv_penetration_depth = sqrt(1. - temperature->at(*pos))/T0_PENETRATION_DEPTH;
+    inv_coherence_length = sqrt(1. - temperature->at(*pos))/T0_COHERENCE_LENGTH;
 }
 //-----------------------------------------------------------
-const force_vector & Vortex::get_force () const
+double Vortex::get_inv_penetration_depth () const
 {
-    return *m_force;
+    return inv_penetration_depth;
+}
+//-----------------------------------------------------------
+double Vortex::get_inv_coherence_length() const
+{
+    return inv_coherence_length;
+}
+//-----------------------------------------------------------
+const PositionVector & Vortex::get_pos () const
+{
+    return *pos;
+}
+//-----------------------------------------------------------
+const ForceVector & Vortex::get_force () const
+{
+    return *force;
 }

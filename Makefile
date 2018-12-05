@@ -1,22 +1,19 @@
 #Makefile
 
-CC= g++ -std=c++11 -stdlib=libc++
+CC= g++ -std=c++17 -stdlib=libc++
 OBJECTS = examples/objects
 SOURCES = lib/sources
-MAIN = examples/
+MAIN = examples
 BIN = bin
 INCLUDES = -I lib/headers/
-CFLAGS= -g
+CFLAGS= -g -O2
 
 all: $(BIN)/thermalGradient
 
-$(BIN)/thermalGradient: $(OBJECTS)/thermalGradient.o $(OBJECTS)/vortex_lattice.o $(OBJECTS)/vortex.o $(OBJECTS)/boundary_condition.o $(OBJECTS)/ran1.o
+$(BIN)/thermalGradient: $(OBJECTS)/thermalGradient.o $(OBJECTS)/vortex.o $(OBJECTS)/boundary_condition.o $(OBJECTS)/ran1.o
 	${CC} ${CFLAGS} $^ -o $@
 
 $(OBJECTS)/thermalGradient.o: $(MAIN)/thermalGradient.cpp
-	${CC} -c ${CFLAGS} ${INCLUDES} $^ -o $@
-
-$(OBJECTS)/vortex_lattice.o: $(SOURCES)/vortex_lattice.cpp
 	${CC} -c ${CFLAGS} ${INCLUDES} $^ -o $@
 
 $(OBJECTS)/vortex.o: $(SOURCES)/vortex.cpp

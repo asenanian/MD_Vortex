@@ -1,17 +1,10 @@
-#pragma once
+#ifndef __UTILITIES_H
+#define __UTILITIES_H
 
+#include <map>
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <map>
-
-#define VISCOSITY .1 // bardeen stephen viscosity at T = 0
-#define INTERACTION_STRENGTH 10.
-#define RIGHT_WALL 128
-#define LEFT_WALL 0
-#define TOP_WALL 128
-#define BOTTOM_WALL 0
-#define NUCLEATION_STRIP_WIDTH 10
 
 float ran1(long *idum);
 inline int ran1(const int &min, const int &max,long *idum)
@@ -48,3 +41,21 @@ namespace utils
         return !mod ? x : std::fmod(std::fmod(x,mod) + mod,mod);
     }
 }
+
+namespace requires_detail
+{
+    template <bool B>
+    struct requires_imp
+    {
+        using template_error_type_failed_to_meet_requirements_on_template_parameters =
+      std::nullptr_t;
+    };
+
+    template <>
+    struct requires_imp <false> {};
+}; // namespace requires_detail
+
+template <bool B>
+using requires = typename requires_detail::requires_imp<B>
+  ::template_error_type_failed_to_meet_requirements_on_template_parameters;
+#endif /* __UTILITIES_H */

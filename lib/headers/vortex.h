@@ -1,30 +1,49 @@
 #ifndef __VORTEX_H
 #define __VORTEX_H
 
+#include <optional>
+
 #include "common.h"
 
-class Vortex
+namespace md_vortex
 {
-public:
-    Vortex (const int&, const int&);
-    Vortex (const position_vector&);
-    ~Vortex ();
-    void addForce (const force_vector&);
-      // queues forces to act on vortex
-    void addForce (const double&, const double&);
-      // queues forces to act on vortex
-    void clearForces ();
-      // clear all forces acting on vortex
-    void updatePositions ();
-      // applies forces in queue
-    const position_vector& get_pos () const;
-      // returns position of vortex
-    const force_vector& get_force () const;
-      // returns the forcs acting on vortex
-private:
-    position_vector * m_pos;
-    force_vector * m_force;
-      // typedefs are defined in common.h
+    class Vortex
+    {
+    public:
+        const static double T0_PENETRATION_DEPTH;
+        const static double T0_COHERENCE_LENGTH;
+
+        using Temperature = std::optional<TemperatureMap>;
+        static Temperature temperature;
+
+        Vortex (const int&, const int&) noexcept;
+        Vortex (const PositionVector&) noexcept;
+        ~Vortex ();
+
+        void AddForce (const ForceVector&);
+          // queues forces to act on vortex
+        void AddForce (const double&, const double&);
+          // queues forces to act on vortex
+        void UpdatePositions (const double&);
+          // applies forces in queue
+        void Move (const PositionVector&);
+          // moves the vortex by an amount given by the argument
+
+        // getters
+        double get_inv_penetration_depth () const;
+        double get_inv_coherence_length () const;
+        const PositionVector& get_pos () const;
+        const ForceVector& get_force () const;
+
+    private:
+        PositionVector * pos;
+        ForceVector * force;
+          // typedefs are defined in common.h
+
+        double inv_penetration_depth;
+        double inv_coherence_length;
+          // superconducting params
+    };
 };
 
 #endif /* end of include guard: __VORTEX_H */
