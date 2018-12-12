@@ -3,21 +3,24 @@
 
 namespace md_vortex
 {
-    template <typename T> struct Vec2d;
+    template <typename T>
+      struct Vec2d;
+
+    template <typename ...Args>
+      class TemperatureMap;
+
     class Vortex;
-    struct TemperatureMap;
+    
     namespace bc
     { struct BoundaryCondition; };
 
     typedef Vec2d<double> PositionVector;
     typedef Vec2d<double> ForceVector;
-    typedef std::vector<std::unique_ptr<const ForceVector>> Forces;
-    typedef std::vector<std::shared_ptr<const bc::BoundaryCondition>> BoundaryConditions;
-    typedef std::vector<Vortex*> Vortices;
+    typedef std::function<double(const PositionVector&)> Temperature;
 
-    const double PI                             = 3.14159265358979;
-    const double PERMEABILITY                   = 4*PI*100; // T*nm/A
-    const double MAG_FLUX_QUANTUM               = 2.067e3; // T*nm*nm
+    constexpr const double PI                             = 3.14159265358979;
+    constexpr const double PERMEABILITY                   = 4*PI*100; // T*nm/A
+    constexpr const double MAG_FLUX_QUANTUM               = 2.067e3; // T*nm*nm
 
 };
 

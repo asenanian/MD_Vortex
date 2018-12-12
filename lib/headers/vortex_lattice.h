@@ -2,231 +2,179 @@
 #define __VORTEX_LATTICE_H
 
 #include "common.h"
+#include "Utilities/type_traits.h"
+#include "Utilities/ranges.h"
 #include "vortex.h"
 
 namespace md_vortex
 {
-    template <typename F, typename E>
-    struct Interaction
-    {
-        typedef F Force;
-        typedef E Energy;
-    };
 
-    class VortexLattice
-    {
-    public:
-        VortexLattice () noexcept;
-            // no temperature dependence
-        VortexLattice (const VortexLattice&) = delete;
-            // disable copy constructor
-        ~VortexLattice ();
-            // d'tor
-        VortexLattice& operator <<(Vortex*);
-            // add constructed vortex
-        VortexLattice& operator <<(std::shared_ptr<const bc::BoundaryCondition>);
-            // add constructed vortex
-        VortexLattice& operator <<(std::unique_ptr<const ForceVector>);
-            // add constructed vortex
-        template <typename InteractionForce, typename Stepper>
-        void Step (const double&);
-            // dynamic step due to interactions and external forces
-        void Dump () const;
-            // output positions of vortices
-        template <typename InteractionEnergy>
-        double Energy () const;
-            // combined energy of lattice due to interactions
+template <typename S>
+  class VortexLattice
+{
+public:
+    using Forces =  std::vector<std::unique_ptr<const ForceVector>>;
+    using BoundaryConditions = std::vector<std::shared_ptr<const BoundaryCondition>>;
+    using Vortices =  std::vector<Vortex*>;
 
-    private:
-        Vortices vortices;
-            // container of vortices
-        BoundaryConditions boundary_conditions;
-            // container of user-specified boundary conditions
-        Forces external_forces;
-            // container of external forces
-    };
+    VortexLattice () noexcept;
+        // no temperature dependence
+    VortexLattice (const VortexLattice&) = delete;
+        // disable copy constructor
+    ~VortexLattice ();
+        // d'tor
+    VortexLattice<S>& operator <<(Vortex*);
+        // add constructed vortex
+    VortexLattice<S>& operator <<(std::shared_ptr<const BoundaryCondition>);
+        // add constructed vortex
+    VortexLattice<S>& operator <<(std::unique_ptr<const ForceVector>);
+        // add constructed vortex
+    std::tuple<size_t,double> equilibrate (const double& /*tolerance*/, double& /*time_step*/);
+        // evolve the system until steady state given by parameter tolerance is reached
+    void step (const double& /*time_step*/);
+        // dynamic step due to interactions and external forces
+    void dump (std::ostream&) const;
+        // output positions of vortices
+    double energy () const;
+        // combined energy of lattice due to interactions
+
+private:
+    Vortices vortices;
+        // container of vortices
+    BoundaryConditions boundary_conditions;
+        // container of user-specified boundary conditions
+    Forces external_forces;
+        // container of external forces
+};
 
 //-------------------------------------------------
-VortexLattice::VortexLattice () noexcept
+template <typename S>
+VortexLattice<S>::VortexLattice () noexcept
 {
+    static_assert(tt::has_force<S>::value,
+        "Stepper needs a Force template parameter.");
+    static_assert(tt::has_energy<S>::value,
+        "Stepper needs a Energy template parameter.");
     vortices = Vortices();
     boundary_conditions = BoundaryConditions();
     external_forces = Forces();
 }
 //-------------------------------------------------
-VortexLattice::~VortexLattice ()
+template <typename S>
+VortexLattice<S>::~VortexLattice ()
 {
     for (auto vortex : vortices)
         delete vortex;
 }
+template <typename S>
 //-------------------------------------------------
-VortexLattice& VortexLattice::operator <<(Vortex * vortex)
+VortexLattice<S>& VortexLattice<S>::operator <<(Vortex * vortex)
 {
     vortices.push_back(vortex);
     return *this;
 }
 //-------------------------------------------------
-VortexLattice& VortexLattice:: operator <<(std::unique_ptr<const ForceVector> force)
+template <typename S>
+VortexLattice<S>& VortexLattice<S>:: operator <<(std::unique_ptr<const ForceVector> force)
 {
     external_forces.push_back(std::move(force));
     return *this;
 }
 //-------------------------------------------------
-VortexLattice& VortexLattice::operator <<(std::shared_ptr<const bc::BoundaryCondition> boundary_condition)
+template <typename S>
+VortexLattice<S>& VortexLattice<S>::operator <<(std::shared_ptr<const BoundaryCondition> boundary_condition)
 {
     boundary_conditions.push_back(boundary_condition);
     return *this;
 }
 //-------------------------------------------------
-template <typename InteractionForce, typename Stepper>
-void VortexLattice::Step (const double& time_step)
+template <typename S>
+std::tuple<size_t,double> VortexLattice<S>::equilibrate (const double& tolerance, double& time_step)
+{
+    double energy = this->energy();
+    size_t n_attempts = 0;
+    size_t steps = 0;
+
+    for (;;)
+    {
+        steps++;
+        step(time_step);
+        if ( steps % 200 == 0 )
+        {
+            double new_energy = this->energy();
+            double delta_E = energy - new_energy;
+            if (delta_E/energy < tolerance && delta_E > 0)
+            {
+                time_step = time_step < 1 ? time_step*1.2 : 1.;
+                return {n_attempts,delta_E};
+            }
+            else
+            {
+                time_step /= 1.2;
+                time_step = time_step > 1e-03 ? time_step/1.2 : 1e-03;
+                n_attempts++;
+                energy = new_energy;
+            }
+        }
+    }
+}
+//-------------------------------------------------
+template <typename S>
+void VortexLattice<S>::step (const double& time_step)
 {
     for (auto vortex1 = vortices.begin(); vortex1 != vortices.end(); ++vortex1)
     {
         for (auto vortex2 = vortex1+1; vortex2 != vortices.end(); ++vortex2)
         // vortex-vortex interactions
         {
-            ForceVector int_force = InteractionForce::apply(*vortex1,*vortex2);
+            ForceVector int_force = S::Force::apply(*vortex1,*vortex2);
 
-            (*vortex1)->AddForce(int_force);
-            (*vortex2)->AddForce(-int_force);
+            (*vortex1)->addForce(int_force);
+            (*vortex2)->addForce(-int_force);
         }
 
         for (const auto& external_force : external_forces)
         // external forces
         {
-            (*vortex1)->AddForce(*external_force);
+            (*vortex1)->addForce(*external_force);
         }
 
         for (const auto & boundary_condition : boundary_conditions)
         // apply boundary conditions
         {
-            if (boundary_condition->Contains((*vortex1)->get_pos() + Stepper::step(*vortex1,time_step)))
+            if (boundary_condition->contains((*vortex1)->get_pos() + S::step(*vortex1,time_step)))
             {
-                boundary_condition->Apply(*vortex1);
+                boundary_condition->apply(*vortex1);
             }
         }
         // update positions based on forces calculated above
-        PositionVector dr = Stepper::step(*vortex1,time_step);
-        (*vortex1)->Move(dr);
+        PositionVector dr = S::step(*vortex1,time_step);
+        (*vortex1)->move(dr);
     }
 }
 //-------------------------------------------------
-template <typename InteractionEnergy>
-double VortexLattice::Energy () const
+template <typename S>
+double VortexLattice<S>::energy () const
 {
     double energy = 0;
-    utils::for_each_pair(vortices,[this,&energy]
+    ranges::for_each_pair(vortices,[this,&energy]
       (Vortex * v1, Vortex * v2) {
         if (v1 == v2)
             return;
 
-        energy += InteractionEnergy::apply(v1,v2);
+        energy += S::Energy::apply(v1,v2);
     });
     return energy;
 }
 //-------------------------------------------------
-void VortexLattice::Dump () const
+template <typename S>
+void VortexLattice<S>::dump (std::ostream& out) const
 {
-    utils::for_each(vortices,[](Vortex * vortex){
-        std::cout << vortex->get_pos() << std::endl;
+    ranges::for_each(vortices,[&out](Vortex * vortex){
+        out << vortex->get_pos()/Vortex::T0_PENETRATION_DEPTH << std::endl;
     });
 }
-//-------------------------------------------------
-    /*
-    //-------------------------------------------------
-    template <typename Interaction, typename Stepper>
-    VortexLattice<Interaction,Stepper>::VortexLattice () noexcept
-    {
-        vortices = Vortices();
-        boundary_conditions = BoundaryConditions();
-        external_forces = Forces();
-    }
-    //-------------------------------------------------
-    template <typename Interaction, typename Stepper>
-    VortexLattice<Interaction,Stepper>::~VortexLattice ()
-    {
-        for (auto vortex : vortices)
-            delete vortex;
-    }
-    //-------------------------------------------------
-    template <typename Interaction, typename Stepper>
-    VortexLattice<Interaction,Stepper>& VortexLattice<Interaction,Stepper>::operator <<(Vortex * vortex)
-    {
-        vortices.push_back(vortex);
-        return *this;
-    }
-    //-------------------------------------------------
-    template <typename Interaction, typename Stepper>
-    VortexLattice<Interaction,Stepper>& VortexLattice<Interaction,Stepper>:: operator <<(std::unique_ptr<const ForceVector> force)
-    {
-        external_forces.push_back(std::move(force));
-        return *this;
-    }
-    //-------------------------------------------------
-    template <typename Interaction, typename Stepper>
-    VortexLattice<Interaction,Stepper>& VortexLattice<Interaction,Stepper>::operator <<(std::shared_ptr<const bc::BoundaryCondition> boundary_condition)
-    {
-        boundary_conditions.push_back(boundary_condition);
-        return *this;
-    }
-    //-------------------------------------------------
-    template <typename Interaction, typename Stepper>
-    void VortexLattice<Interaction,Stepper>::Step (const double& time_step)
-    {
-        for (auto vortex1 = vortices.begin(); vortex1 != vortices.end(); ++vortex1)
-        {
-            for (auto vortex2 = vortex1+1; vortex2 != vortices.end(); ++vortex2)
-            // vortex-vortex interactions
-            {
-                ForceVector int_force = Interaction::Force::apply(*vortex1,*vortex2);
 
-                (*vortex1)->AddForce(int_force);
-                (*vortex2)->AddForce(-int_force);
-            }
+}; // namespace md_vortex
 
-            for (const auto& external_force : external_forces)
-            // external forces
-            {
-                (*vortex1)->AddForce(*external_force);
-            }
-
-            for (const auto & boundary_condition : boundary_conditions)
-            // apply boundary conditions
-            {
-                if (boundary_condition->Contains((*vortex1)->get_pos() + stepper(*vortex1,time_step)))
-                {
-                    boundary_condition->Apply(*vortex1);
-                }
-            }
-            // update positions based on forces calculated above
-            PositionVector dr = stepper(*vortex1,time_step);
-            (*vortex1)->Move(dr);
-        }
-    }
-    //-------------------------------------------------
-    template <typename Interaction, typename Stepper>
-    double VortexLattice<Interaction,Stepper>::Energy () const
-    {
-        double energy = 0;
-        utils::for_each_pair(vortices,[this,&energy]
-          (Vortex * v1, Vortex * v2) {
-            if (v1 == v2)
-                return;
-
-            energy += Interaction::Energy::apply(v1,v2);
-        });
-        return energy;
-    }
-    //-------------------------------------------------
-    template <typename Interaction, typename Stepper>
-    void VortexLattice<Interaction,Stepper>::Dump () const
-    {
-        utils::for_each(vortices,[](Vortex * vortex){
-            std::cout << vortex->get_pos() << std::endl;
-        });
-    }
-    //-------------------------------------------------
-    */
-};
 #endif /* __VORTEX_LATTICE_H */

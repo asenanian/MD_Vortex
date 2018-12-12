@@ -1,49 +1,51 @@
 #ifndef __VORTEX_H
 #define __VORTEX_H
 
-#include <optional>
-
 #include "common.h"
 
 namespace md_vortex
 {
-    class Vortex
-    {
-    public:
-        const static double T0_PENETRATION_DEPTH;
-        const static double T0_COHERENCE_LENGTH;
 
-        using Temperature = std::optional<TemperatureMap>;
-        static Temperature temperature;
+class Vortex
+{
+public:
+    using PositionVector = Vec2d<double>;
+    using ForceVector = Vec2d<double>;
 
-        Vortex (const int&, const int&) noexcept;
-        Vortex (const PositionVector&) noexcept;
-        ~Vortex ();
+    const static double T0_PENETRATION_DEPTH;
+    const static double T0_COHERENCE_LENGTH;
+    const static Temperature temperature;
 
-        void AddForce (const ForceVector&);
-          // queues forces to act on vortex
-        void AddForce (const double&, const double&);
-          // queues forces to act on vortex
-        void UpdatePositions (const double&);
-          // applies forces in queue
-        void Move (const PositionVector&);
-          // moves the vortex by an amount given by the argument
+    Vortex (const int&, const int&) noexcept;
+    Vortex (const std::pair<int,int>&) noexcept;
+    Vortex (const PositionVector&) noexcept;
+    ~Vortex ();
 
-        // getters
-        double get_inv_penetration_depth () const;
-        double get_inv_coherence_length () const;
-        const PositionVector& get_pos () const;
-        const ForceVector& get_force () const;
+    void addForce (const ForceVector&);
+      // queues forces to act on vortex
+    void addForce (const double&, const double&);
+      // queues forces to act on vortex
+    void updatePositions (const double&);
+      // applies forces in queue
+    void move (const PositionVector&);
+      // moves the vortex by an amount given by the argument
 
-    private:
-        PositionVector * pos;
-        ForceVector * force;
-          // typedefs are defined in common.h
+    // getters
+    double get_inv_penetration_depth () const;
+    double get_inv_coherence_length () const;
+    const PositionVector& get_pos () const;
+    const ForceVector& get_force () const;
 
-        double inv_penetration_depth;
-        double inv_coherence_length;
-          // superconducting params
-    };
+private:
+    PositionVector * pos;
+    ForceVector * force;
+      // typedefs are defined in common.h
+
+    double inv_penetration_depth;
+    double inv_coherence_length;
+      // superconducting params
 };
+
+}; // namespace md_vortex
 
 #endif /* end of include guard: __VORTEX_H */

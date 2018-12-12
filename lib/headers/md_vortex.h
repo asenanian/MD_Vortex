@@ -2,6 +2,10 @@
 #define __MD_VORTEX_H
 
 #include "boundary_condition.h"
+#include "Utilities/math.h"
+#include "Utilities/ranges.h"
+#include "Utilities/requires.h"
+#include "Utilities/type_traits.h"
 #include "utilities.h"
 #include "common.h"
 #include "interactions.h"

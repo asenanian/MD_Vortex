@@ -10,18 +10,35 @@ Vortex::Vortex (const int &p_x, const int &p_y) noexcept
 {
     pos = new PositionVector(p_x,p_y);
     force = new ForceVector(0,0);
-    if (!temperature)
-        temperature = Temperature({0.,0.});
-    inv_penetration_depth = sqrt(1. - temperature->at(*pos))/T0_PENETRATION_DEPTH;
-    inv_coherence_length = sqrt(1. - temperature->at(*pos))/T0_COHERENCE_LENGTH;
+
+    //if (!temperature)
+        //temperature = Temperature({0.,0.});
+
+    inv_penetration_depth = sqrt(1. - temperature(*pos))/T0_PENETRATION_DEPTH;
+    inv_coherence_length = sqrt(1. - temperature(*pos))/T0_COHERENCE_LENGTH;
+}
+//-----------------------------------------------------------
+Vortex::Vortex (const std::pair<int,int> &p_pos) noexcept
+{
+    pos = new PositionVector(p_pos.first,p_pos.second);
+    force = new ForceVector(0,0);
+
+    //if (!temperature)
+        //temperature = Temperature({0.,0.});
+
+    inv_penetration_depth = sqrt(1. - temperature(*pos))/T0_PENETRATION_DEPTH;
+    inv_coherence_length = sqrt(1. - temperature(*pos))/T0_COHERENCE_LENGTH;
 }
 //-----------------------------------------------------------
 Vortex::Vortex (const PositionVector &p_pos) noexcept
 {
     pos = new PositionVector(p_pos);
     force = new ForceVector(0,0);
-    if (!temperature)
-        temperature = Temperature({0.,0.});
+    //if (!temperature)
+        //temperature = Temperature({0.,0.});
+
+    inv_penetration_depth = sqrt(1. - temperature(*pos))/T0_PENETRATION_DEPTH;
+    inv_coherence_length = sqrt(1. - temperature(*pos))/T0_COHERENCE_LENGTH;
 }
 //-----------------------------------------------------------
 Vortex::~Vortex ()
@@ -30,30 +47,30 @@ Vortex::~Vortex ()
     delete force;
 }
 //-----------------------------------------------------------
-void Vortex::AddForce (const ForceVector & ext_force)
+void Vortex::addForce (const ForceVector & ext_force)
 {
     *force += ext_force;
 }
 //-----------------------------------------------------------
-void Vortex::AddForce (const double & f_x, const double &f_y)
+void Vortex::addForce (const double & f_x, const double &f_y)
 {
     force->x += f_x;
     force->y += f_y;
 }
 //-----------------------------------------------------------
-void Vortex::UpdatePositions (const double &time_step)
+void Vortex::updatePositions (const double &time_step)
 {
     pos->x += force->x*time_step;
     pos->y += force->y*time_step;
     *force = ForceVector(0,0);
 }
 //-----------------------------------------------------------
-void Vortex::Move (const PositionVector & dr)
+void Vortex::move (const PositionVector & dr)
 {
     *pos += dr;
     *force = ForceVector(0,0);
-    inv_penetration_depth = sqrt(1. - temperature->at(*pos))/T0_PENETRATION_DEPTH;
-    inv_coherence_length = sqrt(1. - temperature->at(*pos))/T0_COHERENCE_LENGTH;
+    inv_penetration_depth = sqrt(1. - temperature(*pos))/T0_PENETRATION_DEPTH;
+    inv_coherence_length = sqrt(1. - temperature(*pos))/T0_COHERENCE_LENGTH;
 }
 //-----------------------------------------------------------
 double Vortex::get_inv_penetration_depth () const

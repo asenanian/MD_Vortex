@@ -3,7 +3,6 @@
 #include "vortex.h"
 
 using namespace md_vortex;
-using namespace bc;
 //------------------------------------------------------------------------------
 namespace
 {
@@ -42,7 +41,7 @@ BoundaryCondition::BoundaryCondition(const double & p_pos, Orientation p_orienta
     option_dictionary.emplace(BoundaryConditionOption(VERTICAL,GREATER_THAN),containsGreaterVertical);
 
     auto temp_func = option_dictionary[BoundaryConditionOption(p_orientation,p_comparator)];
-    Contains = std::bind(temp_func,std::placeholders::_1,p_pos);
+    contains = std::bind(temp_func,std::placeholders::_1,p_pos);
 }
 //------------------------------------------------------------------------------
 ReflectiveBoundaryCondition::ReflectiveBoundaryCondition (const double & p_pos,
@@ -53,7 +52,7 @@ ReflectiveBoundaryCondition::ReflectiveBoundaryCondition (const double & p_pos,
     // Do nothing
 }
 //------------------------------------------------------------------------------
-void ReflectiveBoundaryCondition::Apply (Vortex* vortex) const
+void ReflectiveBoundaryCondition::apply (Vortex* vortex) const
 {
     switch(orientation)
     {
@@ -61,21 +60,21 @@ void ReflectiveBoundaryCondition::Apply (Vortex* vortex) const
         {
             ForceVector force = -vortex->get_force();
             force.x = 0;
-            vortex->AddForce(force);
+            vortex->addForce(force);
             break;
         }
         case Orientation::VERTICAL:
         {
             ForceVector force = -vortex->get_force();
             force.y = 0;
-            vortex->AddForce(force);
+            vortex->addForce(force);
             break;
         }
     }
     return;
 }
 //------------------------------------------------------------------------------
-void AbsorbingBoundaryCondition::Apply (Vortex* vortex) const
+void AbsorbingBoundaryCondition::apply (Vortex* vortex) const
 {
     // TODO
 }
