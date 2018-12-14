@@ -33,7 +33,7 @@ StaticVector::StaticVector (const size_t size) noexcept
           &free), size(size)
 {
     std::fill(data.get(),data.get() + size,
-            std::numeric_limits<double>::signalingNaN());
+            std::numeric_limits<double>::signaling_NaN());
 }
 
 StaticVector::StaticVector (const size_t size, const double value) noexcept

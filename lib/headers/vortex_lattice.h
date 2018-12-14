@@ -37,6 +37,8 @@ public:
         // output positions of vortices
     double energy () const;
         // combined energy of lattice due to interactions
+    void clearVortices();
+        // clear lattice of vortices
 
 private:
     Vortices vortices;
@@ -65,6 +67,7 @@ VortexLattice<S>::~VortexLattice ()
 {
     for (auto vortex : vortices)
         delete vortex;
+    vortices.clear();
 }
 template <typename S>
 //-------------------------------------------------
@@ -99,19 +102,19 @@ std::tuple<size_t,double> VortexLattice<S>::equilibrate (const double& tolerance
     {
         steps++;
         step(time_step);
-        if ( steps % 200 == 0 )
+        if ( steps % 300 == 0 )
         {
             double new_energy = this->energy();
             double delta_E = energy - new_energy;
-            if (delta_E/energy < tolerance && delta_E > 0)
+            if (delta_E/energy < tolerance && delta_E >= 0)
             {
                 time_step = time_step < 1 ? time_step*1.2 : 1.;
                 return {n_attempts,delta_E};
             }
             else
             {
-                time_step /= 1.2;
-                time_step = time_step > 1e-03 ? time_step/1.2 : 1e-03;
+                //std::cout << "failed " << delta_E << std::endl;
+                time_step = time_step > 1e-04 ? time_step/1.2 : 1e-04;
                 n_attempts++;
                 energy = new_energy;
             }
@@ -161,8 +164,13 @@ double VortexLattice<S>::energy () const
       (Vortex * v1, Vortex * v2) {
         if (v1 == v2)
             return;
-
         energy += S::Energy::apply(v1,v2);
+    });
+    
+    energy /= 2.;
+    ranges::for_each(vortices,[this,&energy](Vortex * v1){
+        double lambda_inv = v1->get_inv_penetration_depth();
+        energy += lambda_inv*lambda_inv*MAG_FLUX_QUANTUM*MAG_FLUX_QUANTUM/(4*PI*PERMEABILITY);
     });
     return energy;
 }
@@ -173,6 +181,14 @@ void VortexLattice<S>::dump (std::ostream& out) const
     ranges::for_each(vortices,[&out](Vortex * vortex){
         out << vortex->get_pos()/Vortex::T0_PENETRATION_DEPTH << std::endl;
     });
+}
+//-------------------------------------------------
+template <typename S>
+void VortexLattice<S>::clearVortices()
+{
+    for (auto vortex : vortices)
+        delete vortex;
+    vortices.clear();
 }
 
 }; // namespace md_vortex

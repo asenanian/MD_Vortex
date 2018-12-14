@@ -46,7 +46,7 @@ private:
     template <typename... Args, std::size_t... Is>
     inline double func(std::tuple<Args...>& tup, Index<Is...>,const double& var)
     {
-        return polynomial(var,std::get<Is>(tup)...);
+        return math_detail::polynomial(var,std::get<Is>(tup)...);
     }
 
     template <typename... Args>

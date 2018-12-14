@@ -11,7 +11,10 @@ namespace md_vortex
 template <typename T>
   struct Vec2d
 {
-    // constructors
+    template <requires<std::is_arithmetic<T>::value> = nullptr>
+    Vec2d () noexcept : x(std::numeric_limits<T>::signaling_NaN()),
+                        y(std::numeric_limits<T>::signaling_NaN()) {}
+
     template <requires<std::is_arithmetic<T>::value> = nullptr>
     Vec2d (const T & p_x, const T & p_y) noexcept  : x(p_x), y(p_y) {}
 
@@ -121,11 +124,31 @@ inline bool operator <(const Vec2d<T> &lhs, const Vec2d<T> &rhs)
     else
         return lhs.y < rhs.y;
 }
+//----------------------------------------------------------------------
 template <typename T>
 std::ostream& operator <<(std::ostream &os, const Vec2d<T> &vec)
 {
     os << vec.x << "," << vec.y;
     return os;
+}
+//----------------------------------------------------------------------
+template <typename T, size_t N>
+std::array<Vec2d<T>,N> operator +(const std::array<Vec2d<T>,N>& lhs,
+                                const std::array<Vec2d<T>,N>& rhs) noexcept
+{
+    std::array<Vec2d<T>,N> result;
+    for (int i = 0; i < N; i++)
+      result[i] += lhs[i] + rhs[i];
+    return result;
+}
+//----------------------------------------------------------------------
+template <typename T, size_t N>
+std::array<Vec2d<T>,N>& operator +=(std::array<Vec2d<T>,N>& lhs,
+                                const std::array<Vec2d<T>,N>& rhs) noexcept
+{
+    for (int i = 0; i < N; i++)
+      lhs[i] += rhs[i];
+    return lhs;
 }
 //----------------------------------------------------------------------
 template <typename T>

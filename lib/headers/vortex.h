@@ -16,7 +16,7 @@ public:
     const static double T0_COHERENCE_LENGTH;
     const static Temperature temperature;
 
-    Vortex (const int&, const int&) noexcept;
+    Vortex (const double&, const double&) noexcept;
     Vortex (const std::pair<int,int>&) noexcept;
     Vortex (const PositionVector&) noexcept;
     ~Vortex ();

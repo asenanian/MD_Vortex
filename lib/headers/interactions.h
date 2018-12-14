@@ -10,7 +10,7 @@ namespace md_vortex
 {
 namespace interactions
 {
-  
+
 struct TempDependentForce
 {
     static ForceVector apply(Vortex* vortex1, Vortex * vortex2)
@@ -23,12 +23,12 @@ struct TempDependentForce
           // calculate average penetration depth of interacting vortices
 
         double alpha = r_mag/lambda_effective;
-        double alpha_sqrt = sqrt(PI*alpha/2.);
+        double alpha_sqrt = sqrt(2.*alpha/PI);
         double alpha_exp = exp(-alpha);
         constexpr double T0_LINE_EN = MAG_FLUX_QUANTUM*MAG_FLUX_QUANTUM/(4*PI*PERMEABILITY);
         double m_strength = T0_LINE_EN/(lambda_effective*lambda_effective);
 
-        ForceVector force = unit_vector*(m_strength*alpha_exp*(1.+2.*alpha)/(2.*alpha_sqrt*alpha));
+        ForceVector force = unit_vector*(m_strength*alpha_exp*(1.+2.*alpha)/(2.*alpha_sqrt*alpha))/lambda_effective;
         return force;
     }
 };
@@ -43,7 +43,7 @@ struct TempDependentEnergy
           // calculate average penetration depth of interacting vortices
 
         double alpha = r_mag/lambda_effective;
-        double alpha_sqrt = sqrt(PI*alpha/2.);
+        double alpha_sqrt = sqrt(2.*alpha/PI);
         double alpha_exp = exp(-alpha);
         constexpr double T0_LINE_EN = MAG_FLUX_QUANTUM*MAG_FLUX_QUANTUM/(4*PI*PERMEABILITY);
         double m_strength = T0_LINE_EN/(lambda_effective*lambda_effective);
